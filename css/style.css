@@ -1,0 +1,53 @@
+.name {
+  padding: 30px 30px 10px 30px;
+}
+
+.comment {
+  padding: 10px 30px 30px 30px;
+}
+
+#send {
+  margin-left: 10px;
+}
+
+#send:hover {
+  cursor: pointer;
+}
+
+#output {
+  overflow: auto;
+  padding-left: 30px;
+}
+
+.update {
+  float: right;
+}
+.remove {
+  float: right;
+  margin-left: 10px;
+}
+
+
+.remove:hover {
+  cursor: pointer;
+}
+
+.update:hover {
+  cursor: pointer;
+}
+
+p {
+  max-width: 300px;
+  border: 1px solid black;
+  padding: 20px;
+  animation: slideinLeft 2s both;
+}
+
+@keyframes slideinLeft {
+  0% {
+    transform: translateX(-50px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}

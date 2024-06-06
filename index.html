@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>チャットアプリ</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- コンテンツ表示画面 -->
+
+<div>
+  <div class="name">
+      名前：<input type="text" id="uname">
+  </div>
+  <div class="comment">コメント：<br>
+      <textarea id="text" cols="30" rows="10"></textarea>
+      <button id="send">送信</button>
+  </div>
+  <div id="output"></div>
+</div>
+<!--/ コンテンツ表示画面 -->
+
+
+
+<!-- JQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<!-- JQuery -->
+
+
+<!--** 以下Firebase **-->
+<script type="module">
+// firebaseApikey.jsからexportされているオブジェクトをfirebaseConfigという変数名で取り扱うという意味の記述
+import firebaseConfig from "./firebaseApikey.js";
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, push, set, update,remove, onChildAdded, onChildChanged,onChildRemoved } 
+  // importに書いた関数しか使えない
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+// key発行のバージョンと合わせる
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+console.log(firebaseConfig);
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  // リアルタイムデータベースに接続するよ
+  const dbRef = ref(db,"chat");
+  // どこにデータを流すか（チャットという階層に流す）
+
+  // 送信
+  $("#send").on("click",function(){
+    const msg = {
+      uname : $("#uname").val(),
+      text : $("#text").val()
+    }
+    const newPostRef = push(dbRef);
+    // ユニークキーを生成（階層の下に自動的に振られる長い名前）
+    // ユニークキーにすることで上書きされずに更新される
+    set(newPostRef,msg);
+    //"作成したユニークキーにオブジェクトデータを登録
+
+    // 自分で決めた階層にデータを登録したい場合
+    // ユニークキーの生成は不要
+    // set(dbRef,msg);
+    // 自身の決めた階層への登録ができる（メモ帳アプリなど）
+  });
+
+    // 最初にデータ取得&onSnapshotでリアルタイムにデータ取得
+    onChildAdded(dbRef,function(data){
+      // データが入力されると自動的に取得
+      const msg = data.val();
+      const key = data.key;
+      // 削除・更新にはキー名が重要
+      // 入ってきたデータから取り出す際に使用（下記）
+      let h = '<p id="'+key+'">';
+        // 一つの投稿がpタグ（キー名）によってくくられている、全員共通で削除するために必要
+          h += msg.uname;
+          h += '<br>';
+          h += '<span contentEditable="true" id="'+key+'_update">'+msg.text+'<?span>';
+            // contentEditableによってダブルクリックで投稿の変更が可能
+          h += '<span class="remove" data-key="'+key+'">🚮</span>'
+          h += '<span class="update" data-key="'+key+'">🆙</span>'
+          // updateが押されたときにid="'+key+'_update"としておくことで更新されたtextを取得できるようにしている
+          h += '</p>';
+
+          // 例：<p>あ<br>ああ</p>のようなhtml表示となる
+          $("#output").prepend(h);
+          // appendで一番下にデータを足し続ける
+    });
+
+    // "#output"は投稿の領域のこと
+    // 削除イベント
+    $("#output").on("click",".remove",function(){
+      // removeがclickされたら実行
+      const key = $(this).attr("data-key");
+      // this＝clickされた特定の"data-key"を取得
+      const remove_item = ref(db,"chat/"+key);
+      // 場所を指定（チャットの中の特定ユニークキー）
+      remove(remove_item);
+      // 削除をする
+    });
+
+    // 更新イベント
+    $("#output").on("click",".update",function(){
+      const key =$(this).attr("data-key");
+      update(ref(db,"chat/"+key), {
+      //  どこのデータのキーをアップデートするか
+                  text: $("#"+key+'_update').html()
+      // 88行目で変更されたところのキーをもとにhtmlに反映
+      });
+    });
+
+    // 削除処理がファイヤーベースで実行されたらイベント発生
+    onChildRemoved(dbRef,(data) => {
+    // onChildRemovedでデータベースで削除されたことを感知
+      $("#"+data.key).remove();
+      // Pタグの一つの投稿を削除する
+    });
+
+    // 更新処理がファイアーベースで実行されたらイベント発生
+    onChildChanged(dbRef,(data) => {
+    // onChildChangedでデータベースで更新されたことを感知
+      $("#"+data.key+'_update').html(data.val().text);
+      // 88行目で変更されたところのキーをもとにdata.val()の中のtextをhtmlに更新反映
+      $("#"+data.key+'_update').fadeOut(800).fadeIn(800);
+    });
+    // フェードイン・アウトで該当箇所を教える
+</script>
+
+</body>
+</html>
